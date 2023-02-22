@@ -1,0 +1,21 @@
+{
+  "name": "album-reviews-site",
+  "version": "1.0.0",
+  "description": "to demonstrate node, express, and react skills",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alec VanLandingham",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.272.0",
+    "colorthief": "^2.3.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-fileupload": "^1.4.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemon": "^2.0.20",
+    "pg-promise": "^11.0.2"
+  }
+}
