@@ -36,7 +36,7 @@ app.use(bodyParser.json())
 app.use(express.static('covers'))
 
 
-app.get('/null', (req, res) => {res.sendStatus(200)})
+app.get('/null', (req, res) => res.sendStatus(200))
 
 app.get(
     '/getlogin/:passcode',
@@ -106,7 +106,7 @@ app.put(
             .then(
                 () => {
                     db.none('INSERT INTO scores (rating, albumid, personid) VALUES ($1, $2, $3)', [newRating, albumid, personid])
-                        .then(() => {res.json({message: 'Score updated'})})
+                        .then(() => res.json({message: 'Score updated'}))
                         .catch(error => console.log(error))
                 }
             )
@@ -148,7 +148,7 @@ app.post(
                                         'UPDATE albums SET artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5, albumcoverimg=$6, albumcoverimg_color1=$7, albumcoverimg_color2=$8, albumcoverimg_color3=$9 WHERE albumid=$10',
                                         [artist, title, genre, recordLabel, releaseDate, updFilename, coverImageColor1, coverImageColor2, coverImageColor3, albumid]
                                     )
-                                        .then(() => {res.json({message: 'Album updated'})})
+                                        .then(() => res.json({message: 'Album updated'}))
                                         .catch(error => console.log(error))
                                 }
                             )
@@ -160,7 +160,7 @@ app.post(
                 'UPDATE albums SET artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5 WHERE albumid=$6',
                 [artist, title, genre, recordLabel, releaseDate, albumid]
             )
-                .then(() => {res.json({message: 'Album updated'})})
+                .then(() => res.json({message: 'Album updated'}))
                 .catch(error => console.log(error))
         }
     }
@@ -192,7 +192,7 @@ app.post(
                             "INSERT INTO albums (artist, title, genre, recordLabel, releaseDate, addedDate, albumcoverimg, albumcoverimg_color1, albumcoverimg_color2, albumcoverimg_color3, addedbypersonid) VALUES ($1, $2, $3, $4, $5, now(), $6, $7, $8, $9, $10)",
                             [artist, title, genre, recordLabel, releaseDate, filename, coverImageColor1, coverImageColor2, coverImageColor3, addedby]
                         )
-                            .then(() => {res.json({message: 'added'})})
+                            .then(() => res.json({message: 'added'}))
                             .catch(error => console.log(error))
                     }
                 )
@@ -202,7 +202,7 @@ app.post(
                 "INSERT INTO albums (artist, title, genre, recordLabel, releaseDate, addedDate, addedbypersonid) VALUES ($1, $2, $3, $4, $5, now(), $6)",
                 [artist, title, genre, recordLabel, releaseDate, addedby]
             )
-                .then(() => {res.json({message: 'added'})})
+                .then(() => res.json({message: 'added'}))
                 .catch(error => console.log(error))
         }
                 
@@ -222,7 +222,7 @@ app.delete(
                     }
                     s3Client.send(new DeleteObjectCommand(deleteparams))
                     db.none('DELETE FROM albums WHERE albumid=$1', id)
-                        .then(() => {res.json({message: 'Album deleted'})})
+                        .then(() => res.json({message: 'Album deleted'}))
                         .catch(error => console.log(error))
                 }
             )
@@ -232,5 +232,5 @@ app.delete(
 
 app.listen(
     port,
-    () => console.log(`server on`)
+    () => console.log('server on')
 )
