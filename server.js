@@ -119,9 +119,9 @@ app.post(
     upload.single('coverImage'),
     (req, res) => {
         let { albumid, artist, title, genre, recordLabel, releaseDate } = req.body
-        if (releaseDate === '' || releaseDate === null) {releaseDate = undefined}
-        if (genre === '' || genre === null) {genre = undefined}
-        if (recordLabel === '' || recordLabel === null) {recordLabel = undefined}
+        if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
+        if (genre === '' || genre === null || genre === 'null') {genre = undefined}
+        if (recordLabel === '' || recordLabel === null || recordLabel === 'null') {recordLabel = undefined}
         if (req.file) {
             const updFilename = req.file.filename
             const params = {
