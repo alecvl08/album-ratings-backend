@@ -87,16 +87,6 @@ app.get(
 )
 
 app.get(
-    '/albumratings/:albumid',
-    (req, res) => {
-        const albumid = req.params.albumid
-        db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumid)
-            .then(data => res.send(data))
-            .catch(error => console.log(error))
-    }
-)
-
-app.get(
     '/getalbum/:id',
     (req, res) => {
         const id = req.params.id
