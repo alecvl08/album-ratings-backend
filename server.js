@@ -2,7 +2,7 @@ const pgConnString = process.env.PG_CONN_STRING
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
 const s3bucket = process.env.S3_BUCKET
-const port = process.env.PORT
+const port = process.env.PORT || 3001
 const express = require('express')
 const bodyParser = require('body-parser')
 const multer  = require('multer')
@@ -68,7 +68,20 @@ app.get(
             'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) left join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
             [personid, sortField, sortDirection]
         )
-            .then(data => res.send(data))
+            .then(
+                albumsData => {
+                    let promises = []
+                        for (let i = 0; i < albumsData.length; i++) {
+                            const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
+                                .then(data => albumsData[i].ratings = data)
+                                .catch(error => console.log(error))
+                            promises.push(promise)
+                        }
+                    Promise.all(promises)
+                        .then(() => res.send(albumsData))
+                        .catch(error => console.log(error))
+                }
+            )
             .catch(error => console.log(error))
     }
 )
