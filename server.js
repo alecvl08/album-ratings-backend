@@ -37,6 +37,7 @@ app.use(express.static('covers'))
 
 
 app.get('/null', (req, res) => res.sendStatus(200))
+app.get('/', (req, res) => res.sendStatus(200))
 
 app.get(
     '/getlogin/:passcode',
@@ -51,7 +52,7 @@ app.get(
                     }
                 }
             )
-            .catch(error => res.send(error))
+            .catch(() => res.sendStatus(500))
     }
 )
 
@@ -74,12 +75,12 @@ app.get(
                         for (let i = 0; i < albumsData.length; i++) {
                             const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
                                 .then(data => albumsData[i].ratings = data)
-                                .catch(error => console.log(error))
+                                .catch(() => res.sendStatus(500))
                             promises.push(promise)
                         }
                     Promise.all(promises)
                         .then(() => res.send(albumsData))
-                        .catch(error => console.log(error))
+                        .catch(() => res.sendStatus(500))
                 }
             )
             .catch(() => res.sendStatus(500))
@@ -92,7 +93,7 @@ app.get(
         const id = req.params.id
         db.any('SELECT * FROM albums WHERE albumid = $1', id)
             .then(data => res.send(data))
-            .catch(error => console.log(error))
+            .catch(() => res.sendStatus(500))
     }
 )
 
@@ -110,10 +111,10 @@ app.put(
                 () => {
                     db.none('INSERT INTO scores (rating, albumid, personid) VALUES ($1, $2, $3)', [newRating, albumid, personid])
                         .then(() => res.json({message: 'Score updated'}))
-                        .catch(error => console.log(error))
+                        .catch(() => res.sendStatus(500))
                 }
             )
-            .catch(error => console.log(error))
+            .catch(() => res.sendStatus(500))
     }
 )
 
@@ -152,7 +153,7 @@ app.post(
                                         [artist, title, genre, recordLabel, releaseDate, updFilename, coverImageColor1, coverImageColor2, coverImageColor3, albumid]
                                     )
                                         .then(() => res.json({message: 'Album updated'}))
-                                        .catch(error => console.log(error))
+                                        .catch(() => res.sendStatus(500))
                                 }
                             )
                     }
@@ -164,7 +165,7 @@ app.post(
                 [artist, title, genre, recordLabel, releaseDate, albumid]
             )
                 .then(() => res.json({message: 'Album updated'}))
-                .catch(error => console.log(error))
+                .catch(() => res.sendStatus(500))
         }
     }
 )
@@ -196,7 +197,7 @@ app.post(
                             [artist, title, genre, recordLabel, releaseDate, filename, coverImageColor1, coverImageColor2, coverImageColor3, addedby]
                         )
                             .then(() => res.json({message: 'added'}))
-                            .catch(error => console.log(error))
+                            .catch(() => res.sendStatus(500))
                     }
                 )
         }
@@ -206,7 +207,7 @@ app.post(
                 [artist, title, genre, recordLabel, releaseDate, addedby]
             )
                 .then(() => res.json({message: 'added'}))
-                .catch(error => console.log(error))
+                .catch(() => res.sendStatus(500))
         }
                 
     }
@@ -226,10 +227,10 @@ app.delete(
                     s3Client.send(new DeleteObjectCommand(deleteparams))
                     db.none('DELETE FROM albums WHERE albumid=$1', id)
                         .then(() => res.json({message: 'Album deleted'}))
-                        .catch(error => console.log(error))
+                        .catch(() => res.sendStatus(500))
                 }
             )
-            .catch(error => console.log(error))
+            .catch(() => res.sendStatus(500))
     }
 )
 
