@@ -82,7 +82,7 @@ app.get(
                         .catch(error => console.log(error))
                 }
             )
-            .catch(error => res.sendStatus(500))
+            .catch(() => res.sendStatus(500))
     }
 )
 
