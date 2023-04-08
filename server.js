@@ -43,7 +43,7 @@ app.get(
     '/getlogin/:passcode',
     (req, res) => {
         const passcode = req.params.passcode
-        db.one('select * from people where passcode = $1', passcode)
+        db.any('select * from people where passcode = $1', passcode)
             .then(
                 data => {
                     res.send(data)
