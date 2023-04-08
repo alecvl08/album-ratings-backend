@@ -52,7 +52,7 @@ app.get(
                     }
                 }
             )
-            .catch(() => res.sendStatus(500))
+            .catch(error => res.send(error))
     }
 )
 
