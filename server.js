@@ -51,7 +51,7 @@ app.get(
                     }
                 }
             )
-            .catch(error => console.log(error))
+            .catch(error => res.send(error))
     }
 )
 
