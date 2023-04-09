@@ -59,7 +59,7 @@ app.get(
 
 //this route is used to refresh the list of albums on login, change of sort, or data update
 app.get(
-    '/getalbums/:personid/:sortfield/:sortdirection',
+    '/getalbums/:personid/:sortfield/:sortdirection/:albumlistinstance',
     (req, res) => {
         const personid = req.params.personid
         const sortField = req.params.sortfield
