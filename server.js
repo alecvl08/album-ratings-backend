@@ -158,8 +158,8 @@ app.post(
                             )
                     }
                 )
-        }
-        else {
+                .catch(() => res.status(500).json({message: 'Possible corrupted or invalid image; please try another'}))
+        } else {
             db.none(
                 'UPDATE albums SET artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5 WHERE albumid=$6',
                 [artist, title, genre, recordLabel, releaseDate, albumid]
