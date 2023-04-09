@@ -200,16 +200,15 @@ app.post(
                             .catch(() => res.sendStatus(500))
                     }
                 )
-        }
-        else {
+                .catch(() => res.status(500).json({message: 'Possible corrupted or invalid image; please try another'}))
+        } else {
             db.none(
                 "INSERT INTO albums (artist, title, genre, recordLabel, releaseDate, addedDate, addedbypersonid) VALUES ($1, $2, $3, $4, $5, now(), $6)",
                 [artist, title, genre, recordLabel, releaseDate, addedby]
             )
                 .then(() => res.json({message: 'added'}))
                 .catch(() => res.sendStatus(500))
-        }
-                
+        }    
     }
 )
 
