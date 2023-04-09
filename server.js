@@ -47,6 +47,7 @@ app.get(
             .then(
                 data => {
                     res.send(data)
+                    //delete albums added by demo user if this is a real user
                     if (data.personid !== -1) {
                         db.none('delete from albums where addedbypersonid = -1')
                     }
@@ -56,6 +57,7 @@ app.get(
     }
 )
 
+//this route is used to refresh the list of albums on login, change of sort, or data update
 app.get(
     '/getalbums/:personid/:sortfield/:sortdirection',
     (req, res) => {
@@ -66,9 +68,10 @@ app.get(
         if (sortField === 'rating') {whereClause = 'where s.rating is not null'}
         if (sortField === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
         db.any(
-            'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) left join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
+            'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
             personid
         )
+            //loops through returned albums and gets the table of ratings for each, appends this table as an object to each album
             .then(
                 albumsData => {
                     let promises = []
@@ -87,11 +90,12 @@ app.get(
     }
 )
 
+//get one album by id - used for editing an album
 app.get(
     '/getalbum/:id',
     (req, res) => {
         const id = req.params.id
-        db.any('SELECT * FROM albums WHERE albumid = $1', id)
+        db.any('select * from albums where albumid = $1', id)
             .then(data => res.send(data))
             .catch(() => res.sendStatus(500))
     }
@@ -106,10 +110,10 @@ app.put(
         if (newRating == 'null') {
             newRating = null
         }
-        db.none('DELETE FROM scores WHERE personid = $1 AND albumid = $2', [personid, albumid])
+        db.none('delete from scores where personid = $1 and albumid = $2', [personid, albumid])
             .then(
                 () => {
-                    db.none('INSERT INTO scores (rating, albumid, personid) VALUES ($1, $2, $3)', [newRating, albumid, personid])
+                    db.none('insert into scores (rating, albumid, personid) values ($1, $2, $3)', [newRating, albumid, personid])
                         .then(() => res.json({message: 'Score updated'}))
                         .catch(() => res.sendStatus(500))
                 }
@@ -123,9 +127,12 @@ app.post(
     upload.single('coverImage'),
     (req, res) => {
         let { albumid, artist, title, genre, recordLabel, releaseDate } = req.body
+        //proactively setting fields to undefined if they are some variant of null
+        //(had issue where string null was showing up in fields after update)
         if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
         if (genre === '' || genre === null || genre === 'null') {genre = undefined}
         if (recordLabel === '' || recordLabel === null || recordLabel === 'null') {recordLabel = undefined}
+        //first check if the update includes an image file change
         if (req.file) {
             const updFilename = req.file.filename
             const params = {
@@ -133,13 +140,16 @@ app.post(
                 Key: updFilename,
                 Body: fs.createReadStream(req.file.path)
             }
+            //put image in S3 bucket (Heroku file storage is ephemeral)
             s3Client.send(new PutObjectCommand(params))
+            //gets 3 dominant colors of image, concats the rgb string, and stores all 3 in db (for fast retrieval vs on frontend)
             ColorThief.getPalette(req.file.path)
                 .then(
                     result => {
                         const coverImageColor1 = 'rgb(' + result[0][0] + ',' + result[0][1] + ',' + result[0][2] + ')'
                         const coverImageColor2 = 'rgb(' + result[1][0] + ',' + result[1][1] + ',' + result[1][2] + ')'
                         const coverImageColor3 = 'rgb(' + result[2][0] + ',' + result[2][1] + ',' + result[2][2] + ')'
+                        //gets current album cover filename so it can be deleted from S3 to save storage space
                         db.one('select albumcoverimg from albums where albumid=$1', albumid)
                             .then(
                                 data => {
@@ -147,9 +157,11 @@ app.post(
                                         Bucket: s3bucket,
                                         Key: data.albumcoverimg
                                     }
+                                    //delete old image from S3
                                     s3Client.send(new DeleteObjectCommand(deleteparams))
+                                    //finally update db
                                     db.none(
-                                        'UPDATE albums SET artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5, albumcoverimg=$6, albumcoverimg_color1=$7, albumcoverimg_color2=$8, albumcoverimg_color3=$9 WHERE albumid=$10',
+                                        'update albums set artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5, albumcoverimg=$6, albumcoverimg_color1=$7, albumcoverimg_color2=$8, albumcoverimg_color3=$9 where albumid=$10',
                                         [artist, title, genre, recordLabel, releaseDate, updFilename, coverImageColor1, coverImageColor2, coverImageColor3, albumid]
                                     )
                                         .then(() => res.json({message: 'Album updated'}))
@@ -158,10 +170,12 @@ app.post(
                             )
                     }
                 )
+                //have seen error with certain image files caused by the ColorThief.getPalette function
                 .catch(() => res.status(500).json({message: 'Possible corrupted or invalid image; please try another'}))
+        //if no image file change, just update db
         } else {
             db.none(
-                'UPDATE albums SET artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5 WHERE albumid=$6',
+                'update albums set artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5 where albumid=$6',
                 [artist, title, genre, recordLabel, releaseDate, albumid]
             )
                 .then(() => res.json({message: 'Album updated'}))
@@ -170,6 +184,7 @@ app.post(
     }
 )
 
+//addalbum is mostly the same as editalbum but without deleting old image file and insert statements instead of updates
 app.post(
     '/addalbum',
     upload.single('coverImage'),
@@ -193,7 +208,7 @@ app.post(
                         const coverImageColor2 = 'rgb(' + result[1][0] + ',' + result[1][1] + ',' + result[1][2] + ')'
                         const coverImageColor3 = 'rgb(' + result[2][0] + ',' + result[2][1] + ',' + result[2][2] + ')'
                         db.none(
-                            "INSERT INTO albums (artist, title, genre, recordLabel, releaseDate, addedDate, albumcoverimg, albumcoverimg_color1, albumcoverimg_color2, albumcoverimg_color3, addedbypersonid) VALUES ($1, $2, $3, $4, $5, now(), $6, $7, $8, $9, $10)",
+                            'insert into albums (artist, title, genre, recordLabel, releaseDate, addedDate, albumcoverimg, albumcoverimg_color1, albumcoverimg_color2, albumcoverimg_color3, addedbypersonid) values ($1, $2, $3, $4, $5, now(), $6, $7, $8, $9, $10)',
                             [artist, title, genre, recordLabel, releaseDate, filename, coverImageColor1, coverImageColor2, coverImageColor3, addedby]
                         )
                             .then(() => res.json({message: 'added'}))
@@ -203,7 +218,7 @@ app.post(
                 .catch(() => res.status(500).json({message: 'Possible corrupted or invalid image; please try another'}))
         } else {
             db.none(
-                "INSERT INTO albums (artist, title, genre, recordLabel, releaseDate, addedDate, addedbypersonid) VALUES ($1, $2, $3, $4, $5, now(), $6)",
+                'insert into albums (artist, title, genre, recordLabel, releaseDate, addedDate, addedbypersonid) values ($1, $2, $3, $4, $5, now(), $6)',
                 [artist, title, genre, recordLabel, releaseDate, addedby]
             )
                 .then(() => res.json({message: 'added'}))
@@ -223,8 +238,9 @@ app.delete(
                         Bucket: s3bucket,
                         Key: data.albumcoverimg
                     }
+                    //also delete image file from S3
                     s3Client.send(new DeleteObjectCommand(deleteparams))
-                    db.none('DELETE FROM albums WHERE albumid=$1', id)
+                    db.none('delete from albums where albumid=$1', id)
                         .then(() => res.json({message: 'Album deleted'}))
                         .catch(() => res.sendStatus(500))
                 }
