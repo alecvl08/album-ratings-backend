@@ -66,8 +66,8 @@ app.get(
         if (sortField === 'rating') {whereClause = 'where s.rating is not null'}
         if (sortField === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
         db.any(
-            'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) left join people on addedbypersonid = personid $2 order by $3 $4',
-            [personid, whereClause, sortField, sortDirection]
+            'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) left join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
+            personid
         )
             .then(
                 albumsData => {
