@@ -57,12 +57,13 @@ app.get(
     }
 )
 
+//for future use with redis
 async function cacheAlbumData(personid, albumListInstance) {
-    const sortFields = ['addeddate', 'releasedate', 'artist', 'title', 'averagescore', 'rating'];
-    const sortDirections = ['asc', 'desc'];
+    const sortFields = ['addeddate', 'releasedate', 'artist', 'title', 'averagescore', 'rating']
+    const sortDirections = ['asc', 'desc']
     for (const field of sortFields) {
         for (const direction of sortDirections) {
-            const key = `albums:${personid}:${field}:${direction}:${albumListInstance}`;
+            const key = `albums:${personid}:${field}:${direction}:${albumListInstance}`
             let whereClause = ''
             if (field === 'rating') {whereClause = 'where s.rating is not null'}
             if (field === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
