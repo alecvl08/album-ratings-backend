@@ -166,6 +166,7 @@ app.post(
     upload.single('coverImage'),
     (req, res) => {
         let { albumid, artist, title, genre, recordLabel, releaseDate } = req.body
+        console.log(req.body)
         //proactively setting fields to undefined if they are some variant of null
         //(had issue where string null was showing up in fields after update)
         //if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
