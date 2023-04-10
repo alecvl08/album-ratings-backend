@@ -167,7 +167,6 @@ app.post(
     upload.single('coverImage'),
     (req, res) => {
         let { albumid, artist, title, genre, recordLabel, releaseDate } = req.body
-        console.log(req.body)
         if (recordLabel === 'null') {recordLabel = undefined}
         //first check if the update includes an image file change
         if (req.file) {
