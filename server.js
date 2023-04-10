@@ -167,11 +167,7 @@ app.post(
     (req, res) => {
         let { albumid, artist, title, genre, recordLabel, releaseDate } = req.body
         console.log(req.body)
-        //proactively setting fields to undefined if they are some variant of null
-        //(had issue where string null was showing up in fields after update)
-        //if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
-        //if (genre === '' || genre === null || genre === 'null') {genre = undefined}
-        //if (recordLabel === '' || recordLabel === null || recordLabel === 'null') {recordLabel = undefined}
+        if (recordLabel === 'null') {recordLabel = undefined}
         //first check if the update includes an image file change
         if (req.file) {
             const updFilename = req.file.filename
@@ -230,9 +226,7 @@ app.post(
     upload.single('coverImage'),
     (req, res) => {
         let { artist, title, genre, recordLabel, releaseDate, addedby } = req.body
-        if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
-        if (genre === '' || genre === null || genre === 'null') {genre = undefined}
-        if (recordLabel === '' || recordLabel === null || recordLabel === 'null') {recordLabel = undefined}
+        if (recordLabel === 'null') {recordLabel = undefined}
         if (req.file) {
             const filename = req.file.filename
             const params = {
