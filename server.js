@@ -57,6 +57,35 @@ app.get(
     }
 )
 
+async function cacheAlbumData(personid, albumListInstance) {
+    const sortFields = ['addeddate', 'releasedate', 'artist', 'title', 'averagescore', 'rating'];
+    const sortDirections = ['asc', 'desc'];
+    for (const field of sortFields) {
+        for (const direction of sortDirections) {
+            const key = `albums:${personid}:${field}:${direction}:${albumListInstance}`;
+            let whereClause = ''
+            if (field === 'rating') {whereClause = 'where s.rating is not null'}
+            if (field === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
+            db.any(
+                'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) join people on addedbypersonid = personid ' + whereClause + ' order by ' + field + ' ' + direction,
+                personid
+            )
+                .then(
+                    albumsData => {
+                        let promises = []
+                            for (let i = 0; i < albumsData.length; i++) {
+                                const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
+                                    .then(data => albumsData[i].ratings = data)
+                                promises.push(promise)
+                            }
+                        Promise.all(promises)
+                            .then(() => setData(key, JSON.stringify(albumsData)))
+                    }
+                )
+        }
+    }
+}
+
 //this route is used to refresh the list of albums on login, change of sort, or data update
 app.get(
     '/getalbums/:personid/:sortfield/:sortdirection/:albumlistinstance',
@@ -64,9 +93,14 @@ app.get(
         const personid = req.params.personid
         const sortField = req.params.sortfield
         const sortDirection = req.params.sortdirection
+        const albumListInstance = req.params.albumlistinstance
         let whereClause = ''
         if (sortField === 'rating') {whereClause = 'where s.rating is not null'}
         if (sortField === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
+        //check if album list is in cache
+        //if in cache:
+        //res.send(JSON.parse(cacheData));
+        //else do this { ...
         db.any(
             'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
             personid
@@ -82,7 +116,12 @@ app.get(
                             promises.push(promise)
                         }
                     Promise.all(promises)
-                        .then(() => res.send(albumsData))
+                        .then(
+                            () => {
+                                res.send(albumsData)
+                                cacheAlbumData(personid, albumListInstance)
+                            }
+                        )
                         .catch(() => res.sendStatus(500))
                 }
             )
@@ -129,8 +168,8 @@ app.post(
         let { albumid, artist, title, genre, recordLabel, releaseDate } = req.body
         //proactively setting fields to undefined if they are some variant of null
         //(had issue where string null was showing up in fields after update)
-        if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
-        if (genre === '' || genre === null || genre === 'null') {genre = undefined}
+        //if (releaseDate === '' || releaseDate === null || releaseDate === 'null') {releaseDate = undefined}
+        //if (genre === '' || genre === null || genre === 'null') {genre = undefined}
         if (recordLabel === '' || recordLabel === null || recordLabel === 'null') {recordLabel = undefined}
         //first check if the update includes an image file change
         if (req.file) {
