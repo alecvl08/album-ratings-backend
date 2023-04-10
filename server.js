@@ -79,7 +79,7 @@ async function cacheAlbumData(personid, albumListInstance) {
                                 promises.push(promise)
                             }
                         Promise.all(promises)
-                            .then(() => setData(key, JSON.stringify(albumsData)))
+                            //.then(() => setData(key, JSON.stringify(albumsData)))
                     }
                 )
         }
