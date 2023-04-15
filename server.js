@@ -36,7 +36,8 @@ const redisClient = new Redis(
     {
         tls: {
             rejectUnauthorized: false
-        }
+        },
+        connectTimeout: 10000
     }
 )
 app.use(cors())
