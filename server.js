@@ -1,8 +1,8 @@
-const pgConnString = process.env.PG_CONN_STRING || ''
+const pgConnString = process.env.PG_CONN_STRING
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
 const s3bucket = process.env.S3_BUCKET
-const port = process.env.PORT
+const port = process.env.PORT || 3001
 const express = require('express')
 const bodyParser = require('body-parser')
 const multer  = require('multer')
@@ -30,8 +30,15 @@ const credentials = {
     secretAccessKey:secretAccessKey
 }
 const s3Client = new S3Client({ region: region, credentials: credentials })
-const redis = require("redis")
-const redisClient = redis.createClient({url: process.env.REDIS_URL})
+const Redis = require("ioredis")
+const redisClient = new Redis(
+    process.env.REDIS_URL || 'rediss://:pf55590cac1a2a65c71701df356a64222537e2c5c06587ce13287088284473596@ec2-54-147-148-138.compute-1.amazonaws.com:8160',
+    {
+        tls: {
+            rejectUnauthorized: false
+        }
+    }
+)
 app.use(cors())
 app.use(bodyParser.urlencoded({ extended: 'true' }))
 app.use(bodyParser.json())
@@ -120,12 +127,13 @@ app.get(
                                         }
                                     Promise.all(promises)
                                         .then(
-                                            () => {res.send(albumsData)}
+                                            () => res.send(albumsData)
                                         )
                                         .catch(() => res.sendStatus(500))
                                 }
                             )
                             .catch(() => res.sendStatus(500))
+                        //cache all possible combinations of sort params to redis (in parallel with above db query)
                         cacheAlbumData(personid, albumListInstance)
                     }
                 }
