@@ -127,9 +127,7 @@ app.get(
                                             promises.push(promise)
                                         }
                                     Promise.all(promises)
-                                        .then(
-                                            () => res.send(albumsData)
-                                        )
+                                        .then(() => res.send(albumsData))
                                         .catch(() => res.sendStatus(500))
                                 }
                             )
