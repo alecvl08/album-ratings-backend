@@ -32,7 +32,7 @@ const credentials = {
 const s3Client = new S3Client({ region: region, credentials: credentials })
 const Redis = require("ioredis")
 const redisClient = new Redis(
-    process.env.REDIS_URL || 'rediss://:pf55590cac1a2a65c71701df356a64222537e2c5c06587ce13287088284473596@ec2-54-147-148-138.compute-1.amazonaws.com:8160',
+    process.env.REDIS_URL,
     {
         tls: {
             rejectUnauthorized: false
