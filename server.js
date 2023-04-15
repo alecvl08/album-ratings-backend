@@ -1,4 +1,4 @@
-const pgConnString = process.env.PG_CONN_STRING
+const pgConnString = process.env.PG_CONN_STRING || ''
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
 const s3bucket = process.env.S3_BUCKET
@@ -99,7 +99,7 @@ app.get(
         let whereClause = ''
         if (sortField === 'rating') {whereClause = 'where s.rating is not null'}
         if (sortField === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
-        redisClient.get(`albums:${personid}:${field}:${direction}:${albumListInstance}`)
+        redisClient.get(`albums:${personid}:${sortField}:${sortDirection}:${albumListInstance}`)
             .then(
                 data => {
                     if (data) {res.send(data)}
