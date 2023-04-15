@@ -30,7 +30,7 @@ const credentials = {
     secretAccessKey:secretAccessKey
 }
 const s3Client = new S3Client({ region: region, credentials: credentials })
-const Redis = require("ioredis")
+const Redis = require('ioredis')
 const redisClient = new Redis(
     process.env.REDIS_TLS_URL,
     {
