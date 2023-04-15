@@ -30,6 +30,8 @@ const credentials = {
     secretAccessKey:secretAccessKey
 }
 const s3Client = new S3Client({ region: region, credentials: credentials })
+const redis = require("redis")
+const redisClient = redis.createClient({url: process.env.REDIS_URL})
 app.use(cors())
 app.use(bodyParser.urlencoded({ extended: 'true' }))
 app.use(bodyParser.json())
@@ -57,7 +59,6 @@ app.get(
     }
 )
 
-//for future use with redis
 async function cacheAlbumData(personid, albumListInstance) {
     const sortFields = ['addeddate', 'releasedate', 'artist', 'title', 'averagescore', 'rating']
     const sortDirections = ['asc', 'desc']
@@ -80,7 +81,7 @@ async function cacheAlbumData(personid, albumListInstance) {
                                 promises.push(promise)
                             }
                         Promise.all(promises)
-                            //.then(() => setData(key, JSON.stringify(albumsData)))
+                            .then(() => redisClient.set(key, JSON.stringify(albumsData)))
                     }
                 )
         }
@@ -98,35 +99,37 @@ app.get(
         let whereClause = ''
         if (sortField === 'rating') {whereClause = 'where s.rating is not null'}
         if (sortField === 'averagescore') {whereClause = 'where avg.averagescore is not null'}
-        //check if album list is in cache
-        //if in cache:
-        //res.send(JSON.parse(cacheData));
-        //else do this { ...
-        db.any(
-            'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
-            personid
-        )
-            //loops through returned albums and gets the table of ratings for each, appends this table as an object to each album
+        redisClient.get(`albums:${personid}:${field}:${direction}:${albumListInstance}`)
             .then(
-                albumsData => {
-                    let promises = []
-                        for (let i = 0; i < albumsData.length; i++) {
-                            const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
-                                .then(data => albumsData[i].ratings = data)
-                                .catch(() => res.sendStatus(500))
-                            promises.push(promise)
-                        }
-                    Promise.all(promises)
-                        .then(
-                            () => {
-                                res.send(albumsData)
-                                cacheAlbumData(personid, albumListInstance)
-                            }
+                data => {
+                    if (data) {res.send(data)}
+                    else {
+                        db.any(
+                            'select a.*, s.rating, avg.averagescore, personname as addedbypersonname from albums a left join (select albumid, rating from scores where personid = $1) s using(albumid) left join (select albumid, round(avg(rating),2) as averagescore from scores group by albumid) avg using(albumid) join people on addedbypersonid = personid ' + whereClause + ' order by ' + sortField + ' ' + sortDirection,
+                            personid
                         )
-                        .catch(() => res.sendStatus(500))
+                            //loops through returned albums and gets the table of ratings for each, appends this table as an object to each album
+                            .then(
+                                albumsData => {
+                                    let promises = []
+                                        for (let i = 0; i < albumsData.length; i++) {
+                                            const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
+                                                .then(data => albumsData[i].ratings = data)
+                                                .catch(() => res.sendStatus(500))
+                                            promises.push(promise)
+                                        }
+                                    Promise.all(promises)
+                                        .then(
+                                            () => {res.send(albumsData)}
+                                        )
+                                        .catch(() => res.sendStatus(500))
+                                }
+                            )
+                            .catch(() => res.sendStatus(500))
+                        cacheAlbumData(personid, albumListInstance)
+                    }
                 }
             )
-            .catch(() => res.sendStatus(500))
     }
 )
 
