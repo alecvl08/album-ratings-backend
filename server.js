@@ -120,12 +120,12 @@ app.get(
                             .then(
                                 albumsData => {
                                     let promises = []
-                                        for (let i = 0; i < albumsData.length; i++) {
-                                            const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
-                                                .then(data => albumsData[i].ratings = data)
-                                                .catch(() => res.sendStatus(500))
-                                            promises.push(promise)
-                                        }
+                                    for (let i = 0; i < albumsData.length; i++) {
+                                        const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
+                                            .then(data => albumsData[i].ratings = data)
+                                            .catch(() => res.sendStatus(500))
+                                        promises.push(promise)
+                                    }
                                     Promise.all(promises)
                                         .then(() => res.send(albumsData))
                                         .catch(() => res.sendStatus(500))
@@ -172,6 +172,13 @@ app.put(
     }
 )
 
+function rgb_strings (array) {
+    const color1 = 'rgb(' + array[0][0] + ',' + array[0][1] + ',' + array[0][2] + ')'
+    const color2 = 'rgb(' + array[1][0] + ',' + array[1][1] + ',' + array[1][2] + ')'
+    const color3 = 'rgb(' + array[2][0] + ',' + array[2][1] + ',' + array[2][2] + ')'
+    return [color1,color2,color3]
+}
+
 app.post(
     '/editalbum',
     upload.single('coverImage'),
@@ -192,9 +199,9 @@ app.post(
             ColorThief.getPalette(req.file.path)
                 .then(
                     result => {
-                        const coverImageColor1 = 'rgb(' + result[0][0] + ',' + result[0][1] + ',' + result[0][2] + ')'
-                        const coverImageColor2 = 'rgb(' + result[1][0] + ',' + result[1][1] + ',' + result[1][2] + ')'
-                        const coverImageColor3 = 'rgb(' + result[2][0] + ',' + result[2][1] + ',' + result[2][2] + ')'
+                        const coverImageColor1 = rgb_strings(result)[0]
+                        const coverImageColor2 = rgb_strings(result)[1]
+                        const coverImageColor3 = rgb_strings(result)[2]
                         //gets current album cover filename so it can be deleted from S3 to save storage space
                         db.one('select albumcoverimg from albums where albumid=$1', albumid)
                             .then(
@@ -248,9 +255,9 @@ app.post(
             ColorThief.getPalette(req.file.path)
                 .then(
                     result => {
-                        const coverImageColor1 = 'rgb(' + result[0][0] + ',' + result[0][1] + ',' + result[0][2] + ')'
-                        const coverImageColor2 = 'rgb(' + result[1][0] + ',' + result[1][1] + ',' + result[1][2] + ')'
-                        const coverImageColor3 = 'rgb(' + result[2][0] + ',' + result[2][1] + ',' + result[2][2] + ')'
+                        const coverImageColor1 = rgb_strings(result)[0]
+                        const coverImageColor2 = rgb_strings(result)[1]
+                        const coverImageColor3 = rgb_strings(result)[2]
                         db.none(
                             'insert into albums (artist, title, genre, recordLabel, releaseDate, addedDate, albumcoverimg, albumcoverimg_color1, albumcoverimg_color2, albumcoverimg_color3, addedbypersonid) values ($1, $2, $3, $4, $5, now(), $6, $7, $8, $9, $10)',
                             [artist, title, genre, recordLabel, releaseDate, filename, coverImageColor1, coverImageColor2, coverImageColor3, addedby]
