@@ -186,13 +186,8 @@ app.post(
         //first check if the update includes an image file change
         if (req.file) {
             const updFilename = req.file.filename
-            const params = {
-                Bucket: s3bucket,
-                Key: updFilename,
-                Body: fs.createReadStream(req.file.path)
-            }
             //put image in S3 bucket (Heroku file storage is ephemeral)
-            s3Client.send(new PutObjectCommand(params))
+            s3Client.send(new PutObjectCommand({Bucket: s3bucket, Key: updFilename, Body: fs.createReadStream(req.file.path)}))
             //gets 3 dominant colors of image, concats the rgb string, and stores all 3 in db (for fast retrieval vs on frontend)
             ColorThief.getPalette(req.file.path)
                 .then(
@@ -204,12 +199,8 @@ app.post(
                         db.one('select albumcoverimg from albums where albumid=$1', albumid)
                             .then(
                                 data => {
-                                    const deleteparams = {
-                                        Bucket: s3bucket,
-                                        Key: data.albumcoverimg
-                                    }
                                     //delete old image from S3
-                                    s3Client.send(new DeleteObjectCommand(deleteparams))
+                                    s3Client.send(new DeleteObjectCommand({Bucket: s3bucket, Key: data.albumcoverimg}))
                                     //finally update db
                                     db.none(
                                         'update albums set artist=$1, title=$2, genre=$3, recordLabel=$4, releaseDate=$5, albumcoverimg=$6, albumcoverimg_color1=$7, albumcoverimg_color2=$8, albumcoverimg_color3=$9 where albumid=$10',
@@ -244,12 +235,7 @@ app.post(
         if (recordLabel === 'null') {recordLabel = undefined}
         if (req.file) {
             const filename = req.file.filename
-            const params = {
-                Bucket: s3bucket,
-                Key: filename,
-                Body: fs.createReadStream(req.file.path)
-            }
-            s3Client.send(new PutObjectCommand(params))
+            s3Client.send(new PutObjectCommand({Bucket: s3bucket, Key: updFilename, Body: fs.createReadStream(req.file.path)}))
             ColorThief.getPalette(req.file.path)
                 .then(
                     result => {
@@ -283,12 +269,8 @@ app.delete(
         db.one('select albumcoverimg from albums where albumid=$1', id)
             .then(
                 data => {
-                    deleteparams = {
-                        Bucket: s3bucket,
-                        Key: data.albumcoverimg
-                    }
                     //also delete image file from S3
-                    s3Client.send(new DeleteObjectCommand(deleteparams))
+                    s3Client.send(new DeleteObjectCommand({Bucket: s3bucket, Key: data.albumcoverimg}))
                     db.none('delete from albums where albumid=$1', id)
                         .then(() => res.json({message: 'Album deleted'}))
                         .catch(() => res.sendStatus(500))
