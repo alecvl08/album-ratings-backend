@@ -172,7 +172,7 @@ app.put(
     }
 )
 
-function rgb_strings (array) {
+function rgb_string (array) {
     const color = 'rgb(' + array[0] + ',' + array[1] + ',' + array[2] + ')'
     return color
 }
