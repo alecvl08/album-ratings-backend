@@ -68,6 +68,7 @@ app.get(
 )
 
 async function cacheAlbumData(personid, albumListInstance) {
+    //loop through all sort combinations and get the list of albums in each sort
     const sortFields = ['addeddate', 'releasedate', 'artist', 'title', 'averagescore', 'rating']
     const sortDirections = ['asc', 'desc']
     for (const field of sortFields) {
@@ -83,11 +84,11 @@ async function cacheAlbumData(personid, albumListInstance) {
                 .then(
                     albumsData => {
                         let promises = []
-                            for (let i = 0; i < albumsData.length; i++) {
-                                const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
-                                    .then(data => albumsData[i].ratings = data)
-                                promises.push(promise)
-                            }
+                        for (let i = 0; i < albumsData.length; i++) {
+                            const promise = db.any('select personname, rating from scores join people using(personid) where albumid = $1', albumsData[i].albumid)
+                                .then(data => albumsData[i].ratings = data)
+                            promises.push(promise)
+                        }
                         Promise.all(promises)
                             .then(() => redisClient.set(key, JSON.stringify(albumsData)))
                     }
