@@ -235,7 +235,7 @@ app.post(
         if (recordLabel === 'null') {recordLabel = undefined}
         if (req.file) {
             const filename = req.file.filename
-            s3Client.send(new PutObjectCommand({Bucket: s3bucket, Key: updFilename, Body: fs.createReadStream(req.file.path)}))
+            s3Client.send(new PutObjectCommand({Bucket: s3bucket, Key: filename, Body: fs.createReadStream(req.file.path)}))
             ColorThief.getPalette(req.file.path)
                 .then(
                     result => {
